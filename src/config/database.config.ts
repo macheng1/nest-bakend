@@ -1,6 +1,11 @@
 // src/config/database.config.ts
 import { registerAs } from '@nestjs/config';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+// TypeORM 内部用 require('pg') 动态加载驱动，静态引入才能被打包器追踪到
+import 'pg';
+
+// Serverless 每个实例各持一份连接池，必须压到最小避免打爆数据库连接数
+const isServerless = Boolean(process.env.VERCEL);
 
 export default registerAs('database', (): TypeOrmModuleOptions => ({
   type: 'postgres', // 或 'mysql'
@@ -18,7 +23,7 @@ export default registerAs('database', (): TypeOrmModuleOptions => ({
     process.env.NODE_ENV === 'development' ? ['query', 'error'] : ['error'],
   // 生产连接池配置（根据机器规格调整）
   extra: {
-    max: 20, // 最大连接数
+    max: isServerless ? 2 : 20, // 最大连接数
     connectionTimeoutMillis: 5000, // 连接超时时间
     idleTimeoutMillis: 30000, // 空闲连接释放时间
   },
