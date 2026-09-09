@@ -1,4 +1,8 @@
-import { ValidationPipe, type INestApplication } from '@nestjs/common';
+import {
+  ValidationPipe,
+  type DynamicModule,
+  type INestApplication,
+} from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
 import helmet from 'helmet';
 import { AppModule, ObserveInstrument } from './app.module.js';
@@ -6,12 +10,20 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor.js';
 import { setupSwagger } from './config/swagger.config.js';
 
+export interface CreateAppOptions {
+  extraImports?: NonNullable<DynamicModule['imports']>;
+}
+
 /** 本地 HTTP 服务与 Serverless 共用的应用装配逻辑（不含 listen） */
-export async function createApp(): Promise<INestApplication> {
-  const app = await NestFactory.create(AppModule, {
-    instrument: ObserveInstrument,
-    bufferLogs: true,
-  });
+export async function createApp(
+  options: CreateAppOptions = {},
+): Promise<INestApplication> {
+  const app = await NestFactory.create(
+    AppModule.register(options.extraImports),
+    {
+      instrument: ObserveInstrument,
+    },
+  );
 
   // 全局路由前缀（必须在 Swagger 初始化之前设置）
   app.setGlobalPrefix('api/v1');

@@ -1,7 +1,13 @@
 import { createApp } from './app.factory.js';
+import { pinoHttpOptions } from './config/logger.config.js';
 
 async function bootstrap() {
-  const app = await createApp();
+  // nestjs-pino 是 CJS 包，动态导入避免被 Serverless 入口一并加载
+  const { LoggerModule } = await import('nestjs-pino');
+
+  const app = await createApp({
+    extraImports: [LoggerModule.forRoot({ pinoHttp: pinoHttpOptions })],
+  });
 
   const port = Number(process.env.PORT) || 3000;
   const appName = process.env.APP_NAME ?? 'App';
